@@ -74,8 +74,14 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="appointments" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="clients" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="conversas" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="appointments/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="appointments/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="clients/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="profissionais/index" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="profissionais/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="servicos/index" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="servicos/new" options={{ presentation: 'modal' }} />
       </Stack>
     </QueryClientProvider>
   );

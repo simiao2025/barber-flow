@@ -13,6 +13,7 @@ import {
   TextInput,
   RefreshControl,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useClients, type ClientFilter } from '../../hooks/useClients';
 import { useAuthStore } from '../../stores/auth.store';
@@ -99,6 +100,7 @@ function ClientCard({ client }: { client: Client }) {
 // ============================================================
 
 export default function ClientesScreen() {
+  const router = useRouter();
   const { barbershopId } = useAuthStore();
   const [filter, setFilter] = useState<ClientFilter>('all');
   const [search, setSearch] = useState('');
@@ -132,9 +134,17 @@ export default function ClientesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Clientes</Text>
-        <Text style={styles.headerCount}>
-          {clients ? `${clients.length} clientes` : ''}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Text style={styles.headerCount}>
+            {clients ? `${clients.length} clientes` : ''}
+          </Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => router.push('/clients/new' as any)}
+          >
+            <Ionicons name="add" size={24} color="#f59e0b" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Busca */}
@@ -238,6 +248,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#fff',
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerCount: {
     fontSize: 14,
