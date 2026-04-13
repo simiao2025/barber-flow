@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "expo-device": "~7.0.0"
+  }
+}

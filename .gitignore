@@ -1,0 +1,53 @@
+# ============================================================
+# BARBEAR-FLOW: .gitignore (Raiz do Projeto)
+# ============================================================
+
+# Environment files (SENSITIVE - nunca commitar chaves!)
+.env
+.env.local
+.env.production
+.env.development.local
+.env.production.local
+*.env
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# OS temp
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Expo / Mobile
+barber-app/.expo/
+barber-app/.expo-shared/
+
+# Supabase local dev
+supabase/.temp/
+supabase/.branches/
+
+# Drizzle generated migrations (usar supabase/*.sql)
+agent-server/drizzle/
+
+# Testing
+coverage/
+.nyc_output/

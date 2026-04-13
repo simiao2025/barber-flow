@@ -1,0 +1,81 @@
+# ============================================================
+# BARBEAR-FLOW: Deploy do Agent Server no Railway
+# Trigger: push na branch main, path: agent-server/**
+# ============================================================
+
+name: Deploy Agent Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agent-server/**'
+  workflow_dispatch: # Permite trigger manual
+
+jobs:
+  # ============================================================
+  # 1. TYPECHECK + BUILD
+  # ============================================================
+  typecheck-and-build:
+    name: Typecheck & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./agent-server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: agent-server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-server-dist
+          path: agent-server/
+          retention-days: 5
+
+  # ============================================================
+  # 2. DEPLOY NO RAILWAY
+  # ============================================================
+  deploy-railway:
+    name: Deploy to Railway
+    needs: typecheck-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy
+        run: railway up --detach
+        working-directory: ./agent-server
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Health Check
+        run: |
+          echo "Aguardando deploy..."
+          sleep 30
+          curl -f https://${{ secrets.RAILWAY_DOMAIN }}/health || exit 1
+        env:
+          RAILWAY_DOMAIN: ${{ secrets.RAILWAY_DOMAIN }}

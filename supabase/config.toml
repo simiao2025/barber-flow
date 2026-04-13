@@ -1,0 +1,23 @@
+# Supabase Config
+project_id = "barbear-flow"
+
+[functions.financial-transaction]
+verify_jwt = true
+
+[functions.financial-summary]
+verify_jwt = true
+
+[functions.close-appointment]
+verify_jwt = true
+
+[functions.financial-commissions]
+verify_jwt = true
+
+[functions.dashboard-today]
+verify_jwt = true
+
+[functions.send-push]
+verify_jwt = true
+
+[functions.onboarding-setup]
+verify_jwt = true

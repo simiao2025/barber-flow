@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.jest.cache/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment files (SENSITIVE)
+.env
+.env.local
+.env.development.local
+.env.production
+.env.production.local
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+pino-*.log
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Railway
+.railway/
+
+# Docker
+!Dockerfile
+!docker-compose*.yml

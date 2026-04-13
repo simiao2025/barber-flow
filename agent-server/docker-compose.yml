@@ -1,0 +1,74 @@
+version: '3.8'
+
+# ============================================================
+# BARBEAR-FLOW: Docker Compose
+# Desenvolvimento: docker-compose up
+# Produção: use docker-compose -f docker-compose.prod.yml
+# ============================================================
+
+services:
+  # ============================================================
+  # Agent Server (Hono + TypeScript)
+  # ============================================================
+  agent-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - barber-flow-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT:-3000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+
+  # ============================================================
+  # Redis Local (para desenvolvimento)
+  # Em produção, use Upstash Redis (managed)
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - barber-flow-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  barber-flow-net:
+    driver: bridge
+    name: barber-flow-network
