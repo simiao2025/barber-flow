@@ -33,32 +33,41 @@ if (Platform.OS !== 'web') {
 interface AuthState {
   session: Session | null;
   barbershopId: string | null;
+  barbershopName: string | null;
+  barbershopPlan: string | null;
   isLoading: boolean;
   error: string | null;
+  user: import('@supabase/supabase-js').User | null;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  signOut: () => Promise<void>;
   setSession: (session: Session | null) => void;
   setBarbershopId: (id: string) => void;
+  setBarbershopName: (name: string) => void;
+  setBarbershopPlan: (plan: string) => void;
   clearError: () => void;
   initialize: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
+  user: null,
   barbershopId: storage.getString('barbershopId') || null,
+  barbershopName: storage.getString('barbershopName') || null,
+  barbershopPlan: storage.getString('barbershopPlan') || null,
   isLoading: true,
   error: null,
 
   initialize: async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      set({ session, isLoading: false });
+      set({ session, user: session?.user || null, isLoading: false });
 
       // Listener de mudanças de auth
       supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session });
+        set({ session, user: session?.user || null });
         if (session) {
           storage.set('barbershopId', session.user.id);
         } else {
@@ -107,4 +116,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  signOut: async () => {
+    try {
+      await signOut();
+      storage.delete('barbershopId');
+      storage.delete('barbershopName');
+      storage.delete('barbershopPlan');
+      set({ session: null, barbershopId: null, barbershopName: null, barbershopPlan: null });
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Erro ao sair' });
+      throw error;
+    }
+  },
+
+  setBarbershopName: (name) => {
+    storage.set('barbershopName', name);
+    set({ barbershopName: name });
+  },
+
+  setBarbershopPlan: (plan) => {
+    storage.set('barbershopPlan', plan);
+    set({ barbershopPlan: plan });
+  },
 }));

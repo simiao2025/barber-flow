@@ -138,6 +138,65 @@ export interface Database {
         Insert: Omit<Tables<'follow_ups'>, 'id'>;
         Update: Partial<Tables<'follow_ups'>>;
       };
+      push_tokens: {
+        Row: {
+          id: string;
+          owner_id: string;
+          barbershop_id: string | null;
+          expo_token: string;
+          device_os: 'ios' | 'android' | 'web';
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Tables<'push_tokens'>, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Tables<'push_tokens'>>;
+      };
+      notifications: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          owner_id: string | null;
+          type: 'new_appointment' | 'human_handoff' | 'low_stock' | 'follow_up_failed' | 'daily_summary';
+          title: string | null;
+          body: string | null;
+          data: Json | null;
+          is_read: boolean;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Tables<'notifications'>, 'id' | 'created_at'>;
+        Update: Partial<Tables<'notifications'>>;
+      };
+      notifications_log: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          type: 'new_appointment' | 'human_handoff' | 'low_stock' | 'follow_up_failed' | 'daily_summary';
+          title: string;
+          body: string;
+          tokens_count: number;
+          success_count: number;
+          failed_tokens: string[] | null;
+          sent_at: string;
+        };
+        Insert: Omit<Tables<'notifications_log'>, 'id'>;
+        Update: Partial<Tables<'notifications_log'>>;
+      };
+      product_stock_movements: {
+        Row: {
+          id: string;
+          barbershop_id: string;
+          product_id: string;
+          type: 'in' | 'out' | 'adjustment';
+          quantity: number;
+          reason: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Tables<'product_stock_movements'>, 'id' | 'created_at'>;
+        Update: Partial<Tables<'product_stock_movements'>>;
+      };
     };
     Views: {};
     Functions: {};
@@ -147,6 +206,10 @@ export interface Database {
 
 export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
 
+// ============================================================
+// TYPE EXPORTS
+// ============================================================
+
 export type Barbershop = Tables<'barbershops'>;
 export type Professional = Tables<'professionals'>;
 export type Service = Tables<'services'>;
@@ -155,3 +218,7 @@ export type Appointment = Tables<'appointments'>;
 export type Product = Tables<'products'>;
 export type FinancialTransaction = Tables<'financial_transactions'>;
 export type FollowUp = Tables<'follow_ups'>;
+export type PushToken = Tables<'push_tokens'>;
+export type Notification = Tables<'notifications'>;
+export type NotificationLog = Tables<'notifications_log'>;
+export type ProductStockMovement = Tables<'product_stock_movements'>;
