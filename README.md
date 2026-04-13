@@ -1,6 +1,6 @@
 # 🪒 BarberFlow
 
-> **SaaS Multi-Tenant para Gestão de Barbearias** — Agendamento via WhatsApp com IA, gestão de clientes, financeiro e estoque.
+> **SaaS Multi-Tenant para Gestão de Barbearias** — Agendamento via WhatsApp com IA, gestão completa de clientes, profissionais, serviços, financeiro e estoque.
 
 ## 🚀 Visão Geral
 
@@ -11,10 +11,12 @@ BarberFlow é uma plataforma completa para barbearias gerenciarem seus negócios
 | Área | Recursos |
 |------|----------|
 | **🤖 Agente IA (WhatsApp)** | Agendamento, cancelamento, follow-ups automáticos, transcrição de áudio |
-| **📱 App Mobile (Expo)** | Dashboard, agenda, conversas, notificações push |
-| **💰 Financeiro** | Transações, comissões, relatórios |
-| **📦 Estoque** | Produtos, movimentações, alertas de estoque baixo |
-| **🔔 Notificações** | Push notifications, lembretes 24h/1h, reativação de clientes |
+| **📱 App Mobile (Expo)** | Dashboard, agenda, clientes, financeiro, produtos, profissionais, serviços, configurações |
+| **💰 Financeiro** | Resumo por período, comissões por profissional, transações manuais, ticket médio |
+| **📦 Estoque** | Produtos, movimentações (entrada/saída/ajuste), alertas de estoque baixo |
+| **👥 Profissionais** | CRUD completo, % comissão, serviços vinculados |
+| **✂️ Serviços** | CRUD completo, 7 categorias, preço e duração |
+| **🔔 Notificações** | Push notifications, lembretes 24h/1h, reativação de clientes inativos |
 
 ## 🏗️ Arquitetura
 
@@ -35,8 +37,8 @@ BarberFlow é uma plataforma completa para barbearias gerenciarem seus negócios
 | Componente | Tecnologia |
 |------------|------------|
 | **Agent Server** | Hono + TypeScript + Node.js 20 |
-| **App Mobile** | Expo (React Native) + Zustand |
-| **Banco de Dados** | Supabase (PostgreSQL) + RLS |
+| **App Mobile** | Expo (React Native) + Zustand + TanStack Query |
+| **Banco de Dados** | Supabase (PostgreSQL) + RLS + Edge Functions |
 | **ORM** | Drizzle ORM |
 | **LLM** | Anthropic Claude (tool use nativo) |
 | **WhatsApp** | Evolution API |
@@ -48,30 +50,80 @@ BarberFlow é uma plataforma completa para barbearias gerenciarem seus negócios
 
 ```
 barber-flow/
-├── agent-server/              # Servidor do agente IA
+├── agent-server/                  # Servidor do agente IA
 │   ├── src/
-│   │   ├── agent/             # Orchestrator, session, tools, prompts
-│   │   ├── db/                # Drizzle ORM schema + pool
-│   │   ├── lib/               # Logger, errors, queue, env validator
-│   │   ├── middleware/        # Security, CORS, rate limit, auth
-│   │   ├── routes/            # Webhook, conversas, health
-│   │   ├── services/          # Evolution, LLM, Whisper, scheduler
-│   │   └── types/             # Tipos TypeScript
+│   │   ├── agent/                 # Orchestrator, session, tools, prompts
+│   │   ├── db/                    # Drizzle ORM schema + pool
+│   │   ├── lib/                   # Logger, errors, queue, env validator
+│   │   ├── middleware/            # Security, CORS, rate limit, auth
+│   │   ├── routes/                # Webhook, conversas, health
+│   │   ├── services/              # Evolution, LLM, Whisper, scheduler
+│   │   └── types/                 # Tipos TypeScript
 │   ├── Dockerfile
 │   ├── docker-compose.yml
 │   └── scripts/predeploy-check.ts
-├── barber-app/                # App mobile (Expo)
-│   ├── app/                   # Rotas Expo Router
-│   ├── hooks/                 # React Query hooks
-│   ├── lib/                   # Supabase client, notifications
-│   └── stores/                # Zustand stores
-├── supabase/                  # Migrations do banco
-│   ├── 001_schema_completo.sql
-│   ├── 002_stock_triggers.sql
-│   └── 003_rls_multi_tenant.sql
-├── MIGRATIONS-README.md       # Guia de migrations
-└── GO-LIVE-CHECKLIST.md       # Checklist pré-lançamento
+├── barber-app/                    # App mobile (Expo)
+│   ├── app/                       # Rotas Expo Router (18 telas)
+│   │   ├── (auth)/                # Login, onboarding
+│   │   ├── (tabs)/                # 6 tabs principais
+│   │   ├── appointments/          # Criar + detalhe de agendamento
+│   │   ├── clients/               # Criar/editar cliente
+│   │   ├── profissionais/         # Lista + formulário
+│   │   ├── servicos/              # Lista + formulário
+│   │   └── conversas/             # Lista + chat individual
+│   ├── hooks/                     # 10 hooks React Query + mutations
+│   ├── lib/                       # Supabase client, notifications, query
+│   ├── stores/                    # Zustand auth store
+│   └── types/                     # Tipos TypeScript do banco
+├── supabase/                      # Migrations do banco
+│   ├── 001_schema_completo.sql    # 13 tabelas, 15 enums, RLS, índices
+│   ├── 002_stock_triggers.sql     # Trigger alerta estoque baixo
+│   └── 003_rls_multi_tenant.sql   # RLS otimizado com helper
+├── MIGRATIONS-README.md           # Guia de execução das migrations
+└── GO-LIVE-CHECKLIST.md           # Checklist pré-lançamento
 ```
+
+## 📱 App Mobile — Mapa Completo de Rotas
+
+### Tabs Principais (6)
+
+| Tab | Rota | Funcionalidades |
+|-----|------|----------------|
+| 📅 **Agenda** | `(tabs)/agenda` | Visão por dia, navegação semanal, realtime, FAB novo agendamento |
+| 📊 **Dashboard** | `(tabs)/index` | KPIs do dia, gráfico semanal, rankings de serviços/profissionais, alertas |
+| 👥 **Clientes** | `(tabs)/clientes` | Lista, busca, filtros (ativos/inativos), botão criar cliente |
+| 💰 **Financeiro** | `(tabs)/financeiro` | 3 sub-tabs: resumo, comissões, transações + modal nova transação |
+| 📦 **Produtos** | `(tabs)/produtos` | Lista com estoque, barra visual, filtros, modal movimentação |
+| ⚙️ **Config** | `(tabs)/config` | Conta, preferências, WhatsApp, suporte, logout |
+
+### Rotas Modais
+
+| Rota | Tela |
+|------|------|
+| `/appointments/new` | Criar agendamento (cliente + profissional + serviços + data/hora) |
+| `/appointments/[id]` | Detalhe do agendamento (confirmar, finalizar, cancelar) |
+| `/clients/new` | Criar/editar cliente (nome, telefone, email, observações) |
+| `/profissionais` | Lista de profissionais (comissão, status, ações) |
+| `/profissionais/new` | Criar/editar profissional (nome, comissão, serviços) |
+| `/servicos` | Lista de serviços (preço, duração, categoria, ações) |
+| `/servicos/new` | Criar/editar serviço (nome, preço, duração, 7 categorias) |
+| `/conversas` | Lista de conversas com IA |
+| `/conversas/[phone]` | Chat individual com cliente |
+
+### Hooks (10)
+
+| Hook | Query | Mutations |
+|------|-------|-----------|
+| `useDashboard` | ✅ KPIs via Edge Function | — |
+| `useAppointments` | ✅ Por data, próximos | `create`, `cancel`, `update` |
+| `useClients` | ✅ Lista com filtros | `create`, `update` |
+| `useProfessionals` | ✅ Lista | `create`, `update`, `delete` |
+| `useServices` | ✅ Lista | `create`, `update`, `delete` |
+| `useProducts` | ✅ Lista com filtros | `stockMovement` |
+| `useFinancialSummary` | ✅ Resumo por período | — |
+| `useCommissions` | ✅ Por profissional/período | — |
+| `useTransactions` | ✅ Lista | `create` |
+| `useConversation` | ✅ Lista conversas | `assume`, `returnToAgent`, `sendMessage` |
 
 ## ⚡ Quick Start
 
@@ -185,6 +237,7 @@ npm run predeploy     # Checklist automatizado
 - **Row Level Security (RLS)** no Supabase
 - **Non-root Docker container**
 - **Graceful shutdown** com cleanup completo
+- **Startup validation** de variáveis de ambiente
 
 ## 📊 Agente IA — Ferramentas
 
