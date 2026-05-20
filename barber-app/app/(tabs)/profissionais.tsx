@@ -14,6 +14,7 @@ import {
   RefreshControl,
   Modal,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,7 +22,7 @@ import { useProfessionals } from '../../hooks/useProfessionals';
 import { useAuthStore } from '../../stores/auth.store';
 import type { Professional } from '../../types/database';
 
-const AGENT_SERVER_URL = 'http://localhost:3000';
+const AGENT_SERVER_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
 function ProfessionalCard({
   professional,

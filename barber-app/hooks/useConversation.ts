@@ -3,9 +3,10 @@
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 
-const API_URL = process.env.EXPO_PUBLIC_AGENT_URL || 'http://localhost:3000';
+const API_URL = process.env.EXPO_PUBLIC_AGENT_URL || (Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000');
 
 // ============================================================
 // QUERIES
