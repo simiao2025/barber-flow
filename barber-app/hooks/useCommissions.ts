@@ -41,9 +41,8 @@ async function fetchCommissions(
   if (startDate) params.start_date = startDate;
   if (endDate) params.end_date = endDate;
 
-  const { data, error } = await supabase.functions.invoke('financial-commissions', {
-    params,
-  });
+  const queryString = new URLSearchParams(params).toString();
+  const { data, error } = await supabase.functions.invoke('financial-commissions?' + queryString);
 
   if (error) throw error;
   return data;

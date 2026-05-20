@@ -117,7 +117,7 @@ export default function OnboardingScreen() {
       Alert.alert('Sucesso! 🎉', 'Sua barbearia está configurada!', [
         {
           text: 'Começar',
-          onPress: () => router.replace('/(tabs)/agenda'),
+          onPress: () => router.replace('/'),
         },
       ]);
     } catch (error) {

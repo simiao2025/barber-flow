@@ -8,12 +8,16 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { serve } from '@hono/node-server';
 import { logger as pinoLogger } from './lib/logger.js';
+import { serveStatic } from '@hono/node-server/serve-static';
+import path from 'path';
 import { validateEnv } from './lib/envValidator.js';
+
 import { messageQueue } from './lib/queue.js';
 import { closePool } from './db/index.js';
 import { webhookRoute } from './routes/webhook.js';
 import { conversationsRoute } from './routes/conversations.js';
 import { healthRoute } from './routes/health.js';
+import { professionalsRoutes } from './routes/professionals.js';
 import { FollowUpScheduler } from './services/scheduler.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
 import { configurableCors } from './middleware/cors.js';
@@ -64,6 +68,17 @@ if (!isProduction) {
   });
 }
 
+// 6. Servir arquivos estáticos da marketing page
+const marketingPath = path.resolve('../marketing');
+app.use('/marketing/*', serveStatic({ 
+  root: marketingPath,
+  rewriteRequestPath: (path) => path.replace(/^\/marketing/, '')
+}));
+app.use('/marketing', serveStatic({ path: path.resolve(marketingPath, 'index.html') }));
+
+
+
+
 // Error handler global
 app.onError((err, c) => {
   pinoLogger.error({ err, path: c.req.path, method: c.req.method }, 'Erro não tratado');
@@ -93,6 +108,9 @@ app.route('/webhook', webhookRoute);
 
 // Conversas do agente (protegidas por API key em produção)
 app.route('/conversations', conversationsRoute);
+
+// Rotas de profissionais (RBAC)
+app.route('/api/professionals', professionalsRoutes);
 
 // Rota raiz
 app.get('/', (c) => {

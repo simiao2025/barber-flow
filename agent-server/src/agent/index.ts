@@ -45,6 +45,22 @@ class AgentOrchestrator {
         undefined
       );
 
+      // 2b. Verifica expiração do Trial (7 dias)
+      const TRIAL_DAYS = 7;
+      const trialExpired = 
+        barbershop.plan === 'free' && 
+        (Date.now() - new Date(barbershop.createdAt).getTime() > TRIAL_DAYS * 24 * 60 * 60 * 1000);
+
+      if (trialExpired) {
+        logger.info({ phone, barbershopId: barbershop.id }, 'Trial expirado — enviando aviso');
+        await evolutionService.sendText(
+          phone, 
+          `Olá! O período de teste gratuito de 7 dias da *${barbershop.name}* expirou. 🚀\n\nPara continuar agendando seus clientes automaticamente e não perder vendas, peça ao dono para ativar o plano Premium por apenas *R$ 49,99/mês*.\n\nAssine aqui: https://pay.kiwify.com.br/placeholder`
+        );
+        return;
+      }
+
+
       // 3. Carrega ou cria sessão no Redis
       let session = await agentSessionManager.getSession(phone);
       if (!session) {

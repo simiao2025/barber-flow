@@ -365,7 +365,7 @@ function NewTransactionModal({
 // ============================================================
 
 export default function FinanceiroScreen() {
-  const { barbershopId } = useAuthStore();
+  const { barbershopId, role, professionalId } = useAuthStore();
   const [period, setPeriod] = useState<PeriodType>('month');
   const [activeTab, setActiveTab] = useState<'resumo' | 'comissoes' | 'transacoes'>('resumo');
   const [showNewTransaction, setShowNewTransaction] = useState(false);
@@ -375,7 +375,7 @@ export default function FinanceiroScreen() {
   const { data: commissions, isLoading: loadingCommissions } =
     useCommissions(barbershopId || '');
   const { data: transactions, isLoading: loadingTransactions } =
-    useTransactions(barbershopId || '', 30);
+    useTransactions(barbershopId || '', 30, undefined, role === 'professional' ? professionalId : null);
 
   const onRefresh = async () => {
     await refetchSummary();
@@ -394,12 +394,14 @@ export default function FinanceiroScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Financeiro</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowNewTransaction(true)}
-        >
-          <Ionicons name="add" size={24} color="#f59e0b" />
-        </TouchableOpacity>
+        {role !== 'professional' && (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowNewTransaction(true)}
+          >
+            <Ionicons name="add" size={24} color="#f59e0b" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Período */}
@@ -435,6 +437,15 @@ export default function FinanceiroScreen() {
       </View>
 
       {/* Conteúdo */}
+      {role === 'professional' && (
+        <View style={styles.readOnlyBanner}>
+          <Ionicons name="eye" size={20} color="#f59e0b" />
+          <Text style={styles.readOnlyBannerText}>
+            Visualização Somente Leitura — Suas Comissões e Serviços
+          </Text>
+        </View>
+      )}
+
       <ScrollView
         style={styles.content}
         refreshControl={
@@ -448,7 +459,61 @@ export default function FinanceiroScreen() {
         {/* TAB: RESUMO */}
         {activeTab === 'resumo' && (
           <View style={styles.tabContent}>
-            {loadingSummary || !summary ? (
+            {role === 'professional' ? (
+              loadingCommissions || !commissions ? (
+                <ActivityIndicator size="large" color="#f59e0b" style={styles.loader} />
+              ) : (
+                (() => {
+                  const myCommission = commissions.commissions.find(c => c.professional_id === professionalId);
+                  const grossRevenue = myCommission?.gross_revenue || 0;
+                  const netCommission = myCommission?.commission_total || 0;
+                  const appointmentsCount = myCommission?.total_appointments || 0;
+                  const avgTicket = appointmentsCount > 0 ? grossRevenue / appointmentsCount : 0;
+
+                  return (
+                    <>
+                      {/* KPIs Pessoais */}
+                      <View style={styles.metricsGrid}>
+                        <MetricCard
+                          icon="scissors"
+                          label="Faturamento Serviços"
+                          value={`R$ ${grossRevenue.toFixed(2)}`}
+                          color="#10b981"
+                        />
+                        <MetricCard
+                          icon="arrow-up"
+                          label="Despesas"
+                          value="R$ 0.00"
+                          color="#ef4444"
+                        />
+                        <MetricCard
+                          icon="cash"
+                          label="Minha Comissão"
+                          value={`R$ ${netCommission.toFixed(2)}`}
+                          color="#f59e0b"
+                        />
+                        <MetricCard
+                          icon="pricetag"
+                          label="Ticket Médio"
+                          value={`R$ ${avgTicket.toFixed(2)}`}
+                          color="#3b82f6"
+                        />
+                      </View>
+
+                      {/* Agendamentos do profissional */}
+                      <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>
+                          Meus Atendimentos Realizados
+                        </Text>
+                        <Text style={styles.sectionValue}>
+                          {appointmentsCount} no período
+                        </Text>
+                      </View>
+                    </>
+                  );
+                })()
+              )
+            ) : loadingSummary || !summary ? (
               <ActivityIndicator size="large" color="#f59e0b" style={styles.loader} />
             ) : (
               <>
@@ -563,26 +628,38 @@ export default function FinanceiroScreen() {
             {loadingCommissions || !commissions ? (
               <ActivityIndicator size="large" color="#f59e0b" style={styles.loader} />
             ) : (
-              <>
-                <View style={styles.commissionTotalCard}>
-                  <Text style={styles.commissionTotalLabel}>
-                    Total em Comissões
-                  </Text>
-                  <Text style={styles.commissionTotalValue}>
-                    R$ {commissions.total_commission.toFixed(2)}
-                  </Text>
-                  <Text style={styles.commissionPeriod}>
-                    {format(new Date(commissions.period.start), 'dd/MM/yyyy')} -{' '}
-                    {format(new Date(commissions.period.end), 'dd/MM/yyyy')}
-                  </Text>
-                </View>
+              (() => {
+                const displayedCommissions = role === 'professional'
+                  ? commissions.commissions.filter(c => c.professional_id === professionalId)
+                  : commissions.commissions;
 
-                <View style={styles.commissionsList}>
-                  {commissions.commissions.map((c) => (
-                    <CommissionItem key={c.professional_id} item={c} />
-                  ))}
-                </View>
-              </>
+                const totalDisplayedCommission = role === 'professional'
+                  ? (displayedCommissions[0]?.commission_total || 0)
+                  : commissions.total_commission;
+
+                return (
+                  <>
+                    <View style={styles.commissionTotalCard}>
+                      <Text style={styles.commissionTotalLabel}>
+                        {role === 'professional' ? 'Minha Comissão Total' : 'Total em Comissões'}
+                      </Text>
+                      <Text style={styles.commissionTotalValue}>
+                        R$ {totalDisplayedCommission.toFixed(2)}
+                      </Text>
+                      <Text style={styles.commissionPeriod}>
+                        {format(new Date(commissions.period.start), 'dd/MM/yyyy')} -{' '}
+                        {format(new Date(commissions.period.end), 'dd/MM/yyyy')}
+                      </Text>
+                    </View>
+
+                    <View style={styles.commissionsList}>
+                      {displayedCommissions.map((c) => (
+                        <CommissionItem key={c.professional_id} item={c} />
+                      ))}
+                    </View>
+                  </>
+                );
+              })()
             )}
           </View>
         )}
@@ -1011,5 +1088,23 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     textAlign: 'center',
     marginTop: 48,
+  },
+  readOnlyBanner: {
+    backgroundColor: '#f59e0b20',
+    borderColor: '#f59e0b',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  readOnlyBannerText: {
+    color: '#f59e0b',
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
   },
 });

@@ -23,7 +23,7 @@ import type { Appointment } from '../../types/database';
 
 export default function AppointmentDetailScreen() {
   const router = useRouter();
-  const { barbershopId } = useAuthStore();
+  const { barbershopId, role } = useAuthStore();
   const { id } = useLocalSearchParams();
   const appointmentId = id as string;
 
@@ -50,7 +50,7 @@ export default function AppointmentDetailScreen() {
   });
 
   const handleStatusChange = async (newStatus: string) => {
-    if (!appointment) return;
+    if (!appointment || role === 'professional') return;
 
     Alert.alert(
       'Confirmar',
@@ -177,7 +177,7 @@ export default function AppointmentDetailScreen() {
         {/* Profissional */}
         <View style={styles.card}>
           <View style={styles.cardRow}>
-            <Ionicons name="scissors" size={20} color="#8b5cf6" />
+            <Ionicons name="cut" size={20} color="#8b5cf6" />
             <View style={styles.cardInfo}>
               <Text style={styles.cardLabel}>Profissional</Text>
               <Text style={styles.cardValue}>{appointment.professionals?.name || 'N/A'}</Text>
@@ -226,7 +226,7 @@ export default function AppointmentDetailScreen() {
       </ScrollView>
 
       {/* Ações */}
-      {appointment.status !== 'done' && appointment.status !== 'cancelled' && (
+      {role !== 'professional' && appointment.status !== 'done' && appointment.status !== 'cancelled' && (
         <View style={styles.footer}>
           {appointment.status === 'pending' && (
             <TouchableOpacity

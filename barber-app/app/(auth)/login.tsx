@@ -33,7 +33,7 @@ export default function LoginScreen() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password);
-      router.replace('/(tabs)/agenda');
+      router.replace('/');
     } catch (error) {
       Alert.alert(
         'Erro ao fazer login',

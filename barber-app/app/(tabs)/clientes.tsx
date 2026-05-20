@@ -101,14 +101,15 @@ function ClientCard({ client }: { client: Client }) {
 
 export default function ClientesScreen() {
   const router = useRouter();
-  const { barbershopId } = useAuthStore();
+  const { barbershopId, role, professionalId } = useAuthStore();
   const [filter, setFilter] = useState<ClientFilter>('all');
   const [search, setSearch] = useState('');
 
   const { data: clients, isLoading, refetch } = useClients(
     barbershopId || '',
     filter,
-    search || undefined
+    search || undefined,
+    role === 'professional' ? professionalId : null
   );
 
   const filters: { key: ClientFilter; label: string; icon: string }[] = [
@@ -138,12 +139,14 @@ export default function ClientesScreen() {
           <Text style={styles.headerCount}>
             {clients ? `${clients.length} clientes` : ''}
           </Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => router.push('/clients/new' as any)}
-          >
-            <Ionicons name="add" size={24} color="#f59e0b" />
-          </TouchableOpacity>
+          {role !== 'professional' && (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => router.push('/clients/new' as any)}
+            >
+              <Ionicons name="add" size={24} color="#f59e0b" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

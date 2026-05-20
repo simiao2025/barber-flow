@@ -57,8 +57,9 @@ export default function RootLayout() {
     if (!session && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (session && inAuthGroup) {
-      router.replace('/(tabs)/agenda');
+      router.replace('/');
     }
+
   }, [session, isReady]);
 
   if (!isReady || isLoading) {

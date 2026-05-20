@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarberFlow | Gestão Inteligente & Agendamento por IA</title>
+    <link rel="stylesheet" href="/marketing/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <nav class="glass-nav">
+        <div class="container nav-content">
+            <div class="logo">
+                <span class="logo-accent">Barber</span>Flow
+            </div>
+            <div class="nav-links">
+                <a href="#features">Recursos</a>
+                <a href="#pricing">Planos</a>
+                <a href="https://pay.kiwify.com.br/placeholder" class="btn btn-primary">Começar Agora</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container hero-content">
+            <div class="hero-text">
+                <span class="badge">Agendamento por Voz Disponível</span>
+                <h1>Sua barbearia no <span class="text-gradient">piloto automático</span></h1>
+                <p>Automatize seus agendamentos via WhatsApp com nossa IA exclusiva. Reduza faltas em 40% e nunca mais perca um cliente por demora no atendimento.</p>
+                <div class="hero-actions">
+                    <a href="https://pay.kiwify.com.br/placeholder" class="btn btn-lg btn-primary">Garantir Minha Vaga</a>
+                    <button onclick="showDownloadPopup()" class="btn btn-lg btn-secondary">Baixar App</button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="phone-mockup">
+                    <div class="chat-animation" id="chat-demo">
+                        <!-- Animado via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Por que o BarberFlow?</h2>
+            <div class="features-grid">
+                <div class="feature-card glass">
+                    <i data-lucide="mic"></i>
+                    <h3>Agendamento por Voz</h3>
+                    <p>Seus clientes enviam áudios e nossa IA transcreve, confirma o horário e agenda tudo no seu painel.</p>
+                </div>
+                <div class="feature-card glass">
+                    <i data-lucide="trending-up"></i>
+                    <h3>Dashboard em Tempo Real</h3>
+                    <p>Veja faturamento, agendamentos do dia e novos clientes em um painel limpo e intuitivo.</p>
+                </div>
+                <div class="feature-card glass">
+                    <i data-lucide="bell"></i>
+                    <h3>Lembretes Automáticos</h3>
+                    <p>O sistema avisa o cliente 24h e 1h antes, reduzindo drasticamente o "No-Show".</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <h2 class="section-title">Escolha seu Plano</h2>
+            <div class="pricing-grid">
+                <div class="price-card glass">
+                    <h3>Teste Grátis</h3>
+                    <div class="price">R$ 0</div>
+                    <ul class="price-features">
+                        <li><i data-lucide="check"></i> 7 dias de acesso total</li>
+                        <li><i data-lucide="check"></i> Agendamento por IA</li>
+                        <li><i data-lucide="check"></i> Dashboard completo</li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary">Testar Agora</a>
+                </div>
+                <div class="price-card glass featured">
+                    <div class="popular-badge">Mais Popular</div>
+                    <h3>Plano Premium</h3>
+                    <div class="price">R$ 49,99<span>/mês</span></div>
+
+                    <ul class="price-features">
+                        <li><i data-lucide="check"></i> Agendamentos Ilimitados</li>
+                        <li><i data-lucide="check"></i> Agente de Voz 24/7</li>
+                        <li><i data-lucide="check"></i> Gestão de Equipe</li>
+                        <li><i data-lucide="check"></i> Suporte Prioritário</li>
+                    </ul>
+                    <a href="https://pay.kiwify.com.br/placeholder" class="btn btn-primary">Assinar Agora</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 BarberFlow. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Popup de Download -->
+    <div id="download-popup" class="modal">
+        <div class="modal-content glass">
+            <span class="close" onclick="hideDownloadPopup()">&times;</span>
+            <i data-lucide="rocket" size="48" color="#f59e0b"></i>
+            <h3>Em Breve nas Lojas!</h3>
+            <p>Estamos finalizando os ajustes para a Apple Store e Google Play. Por enquanto, utilize nossa versão Web e Trial!</p>
+            <button onclick="hideDownloadPopup()" class="btn btn-primary">Entendido</button>
+        </div>
+    </div>
+
+    <script src="/marketing/script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

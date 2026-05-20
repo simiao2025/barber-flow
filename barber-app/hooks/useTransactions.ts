@@ -31,20 +31,33 @@ export interface CreateTransactionDto {
 async function fetchTransactions(
   barbershopId: string,
   limit = 50,
-  type?: TransactionType
+  type?: TransactionType,
+  professionalId?: string | null
 ) {
   let query = supabase
     .from('financial_transactions')
     .select('*')
     .eq('barbershop_id', barbershopId)
-    .order('transaction_at', { ascending: false })
-    .limit(limit);
+    .order('transaction_at', { ascending: false });
 
   if (type) {
     query = query.eq('type', type);
   }
 
-  const { data, error } = await query;
+  if (professionalId) {
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('id')
+      .eq('professional_id', professionalId);
+
+    const appointmentIds = (appointments || []).map((a) => a.id);
+    if (appointmentIds.length === 0) {
+      return [];
+    }
+    query = query.in('appointment_id', appointmentIds);
+  }
+
+  const { data, error } = await query.limit(limit);
   if (error) throw error;
   return data as FinancialTransaction[];
 }
@@ -75,11 +88,12 @@ async function createTransaction(dto: CreateTransactionDto) {
 export function useTransactions(
   barbershopId: string,
   limit = 50,
-  type?: TransactionType
+  type?: TransactionType,
+  professionalId?: string | null
 ) {
   return useQuery({
-    queryKey: ['transactions', barbershopId, type],
-    queryFn: () => fetchTransactions(barbershopId, limit, type),
+    queryKey: ['transactions', barbershopId, type, professionalId],
+    queryFn: () => fetchTransactions(barbershopId, limit, type, professionalId),
     staleTime: 2 * 60 * 1000,
     enabled: !!barbershopId,
   });

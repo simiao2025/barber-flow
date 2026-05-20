@@ -59,7 +59,7 @@ function AppointmentCard({ appointment }: { appointment: Appointment & { clients
 
       <Text style={styles.clientName}>{appointment.clients?.name || 'Cliente'}</Text>
       <Text style={styles.professional}>
-        <Ionicons name="scissors" size={14} color="#9ca3af" /> {appointment.professionals?.name || 'Profissional'}
+        <Ionicons name="cut" size={14} color="#9ca3af" /> {appointment.professionals?.name || 'Profissional'}
       </Text>
     </TouchableOpacity>
   );
@@ -94,12 +94,16 @@ function SkeletonCard() {
 
 export default function AgendaScreen() {
   const router = useRouter();
-  const { barbershopId } = useAuthStore();
+  const { barbershopId, role, professionalId } = useAuthStore();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
 
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
-  const { data: appointments, isLoading, refetch } = useAppointmentsByDate(dateStr, barbershopId || '');
+  const { data: appointments, isLoading, refetch } = useAppointmentsByDate(
+    dateStr,
+    barbershopId || '',
+    role === 'professional' ? professionalId : null
+  );
 
   // Realtime subscription
   useEffect(() => {
@@ -208,12 +212,14 @@ export default function AgendaScreen() {
       )}
 
       {/* FAB - Novo agendamento */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/appointments/new')}
-      >
-        <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
+      {role !== 'professional' && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/appointments/new')}
+        >
+          <Ionicons name="add" size={32} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

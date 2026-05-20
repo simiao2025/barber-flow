@@ -19,13 +19,27 @@ export type ClientFilter = 'all' | 'active' | 'inactive';
 async function fetchClients(
   barbershopId: string,
   filter: ClientFilter = 'all',
-  search?: string
+  search?: string,
+  professionalId?: string | null
 ) {
   let query = supabase
     .from('clients')
     .select('*')
     .eq('barbershop_id', barbershopId)
     .order('name', { ascending: true });
+
+  if (professionalId) {
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('client_id')
+      .eq('professional_id', professionalId);
+      
+    const clientIds = Array.from(new Set((appointments || []).map(a => a.client_id).filter(Boolean)));
+    if (clientIds.length === 0) {
+      return [];
+    }
+    query = query.in('id', clientIds);
+  }
 
   // Filtro de inativos (>30 dias sem visita)
   if (filter === 'inactive') {
@@ -61,11 +75,12 @@ async function fetchClients(
 export function useClients(
   barbershopId: string,
   filter: ClientFilter = 'all',
-  search?: string
+  search?: string,
+  professionalId?: string | null
 ) {
   return useQuery({
-    queryKey: ['clients', barbershopId, filter, search],
-    queryFn: () => fetchClients(barbershopId, filter, search),
+    queryKey: ['clients', barbershopId, filter, search, professionalId],
+    queryFn: () => fetchClients(barbershopId, filter, search, professionalId),
     staleTime: 2 * 60 * 1000,
     enabled: !!barbershopId,
   });

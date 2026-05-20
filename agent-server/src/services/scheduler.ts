@@ -44,7 +44,7 @@ export class FollowUpScheduler {
      * Executa a cada 15 minutos
      * Busca follow-ups pendentes com scheduled_for dentro da janela de ±10 min
      */
-    const job1 = cron.schedule('*/15 * * * *', async () => {
+    const job1 = cron.schedule('2,17,32,47 * * * *', async () => {
       await this.processWithIsolation(async () => {
         await this.processReminderJobs();
       }, 'reminder');
@@ -59,7 +59,7 @@ export class FollowUpScheduler {
      * Executa a cada hora
      * Busca appointments "done" nos últimos 45-75 min sem follow-up post_service
      */
-    const job2 = cron.schedule('0 * * * *', async () => {
+    const job2 = cron.schedule('5 * * * *', async () => {
       await this.processWithIsolation(async () => {
         await this.processPostServiceJobs();
       }, 'post_service');
@@ -75,7 +75,7 @@ export class FollowUpScheduler {
      * Busca clients sem visita há 30/60/90 dias
      * Limite: 30 envios por barbearia, intervalo 500ms
      */
-    const job3 = cron.schedule('0 10 * * *', async () => {
+    const job3 = cron.schedule('10 10 * * *', async () => {
       await this.processWithIsolation(async () => {
         await this.processReactivationJobs();
       }, 'reactivation');
@@ -138,14 +138,19 @@ export class FollowUpScheduler {
     const windowEnd = new Date(now.getTime() + 5 * 60 * 1000); // +5 min
 
     // Busca follow-ups pendentes dentro da janela
+    // Utilizando seleção explícita para evitar ambiguidades em joins complexos
     const followUpsResult = await this.db
       .select({
-        followUp: followUps,
-        client: clients,
-        appointment: appointments,
-        professional: professionals,
-        service: services,
-        barbershop: barbershops,
+        followUpId: followUps.id,
+        followUpType: followUps.type,
+        clientId: clients.id,
+        clientName: clients.name,
+        clientPhone: clients.phone,
+        clientLastVisit: clients.lastVisitAt,
+        scheduledAt: appointments.scheduledAt,
+        professionalName: professionals.name,
+        barbershopId: barbershops.id,
+        barbershopName: barbershops.name,
       })
       .from(followUps)
       .innerJoin(clients, eq(followUps.clientId, clients.id))
@@ -156,10 +161,6 @@ export class FollowUpScheduler {
       .leftJoin(
         professionals,
         eq(appointments.professionalId, professionals.id)
-      )
-      .leftJoin(
-        services,
-        sql`${services.id} = ${appointments.serviceIds}[1]`
       )
       .innerJoin(
         barbershops,
@@ -193,12 +194,12 @@ export class FollowUpScheduler {
 
     for (const row of followUpsResult) {
       const result = await this.processSingleFollowUp({
-        followUp: row.followUp,
-        client: row.client,
-        appointment: row.appointment,
-        professional: row.professional,
-        service: row.service,
-        barbershop: row.barbershop,
+        followUp: { id: row.followUpId, type: row.followUpType } as any,
+        client: { id: row.clientId, name: row.clientName, phone: row.clientPhone, lastVisitAt: row.clientLastVisit } as any,
+        appointment: { scheduledAt: row.scheduledAt } as any,
+        professional: { name: row.professionalName } as any,
+        service: null,
+        barbershop: { id: row.barbershopId, name: row.barbershopName } as any,
       });
 
       if (result.success) successCount++;
@@ -224,10 +225,14 @@ export class FollowUpScheduler {
     // Busca appointments finalizados sem post_service enviado
     const appointmentsResult = await this.db
       .select({
-        appointment: appointments,
-        client: clients,
-        professional: professionals,
-        barbershop: barbershops,
+        appointmentId: appointments.id,
+        appointmentBarbershopId: appointments.barbershopId,
+        appointmentClientId: appointments.clientId,
+        appointmentScheduledAt: appointments.scheduledAt,
+        clientName: clients.name,
+        clientPhone: clients.phone,
+        professionalName: professionals.name,
+        barbershopName: barbershops.name,
       })
       .from(appointments)
       .innerJoin(clients, eq(appointments.clientId, clients.id))
@@ -276,25 +281,25 @@ export class FollowUpScheduler {
       const followUpResult = await this.db
         .insert(followUps)
         .values({
-          barbershopId: row.appointment.barbershopId,
-          clientId: row.appointment.clientId,
-          appointmentId: row.appointment.id,
+          barbershopId: row.appointmentBarbershopId,
+          clientId: row.appointmentClientId,
+          appointmentId: row.appointmentId,
           type: 'post_service',
           scheduledFor: new Date(),
           status: 'pending',
         })
         .returning();
 
+      await this.sleep(SEND_INTERVAL);
+
       await this.processSingleFollowUp({
         followUp: followUpResult[0],
-        client: row.client,
-        appointment: row.appointment,
-        professional: row.professional,
+        client: { name: row.clientName, phone: row.clientPhone } as any,
+        appointment: { scheduledAt: row.appointmentScheduledAt } as any,
+        professional: { name: row.professionalName } as any,
         service: null,
-        barbershop: row.barbershop,
+        barbershop: { id: row.appointmentBarbershopId, name: row.barbershopName } as any,
       });
-
-      await this.sleep(SEND_INTERVAL);
     }
   }
 
@@ -317,7 +322,10 @@ export class FollowUpScheduler {
       // Busca clientes inativos por faixa de tempo
       const inactiveClients = await this.db
         .select({
-          client: clients,
+          clientId: clients.id,
+          clientName: clients.name,
+          clientPhone: clients.phone,
+          clientLastVisit: clients.lastVisitAt,
         })
         .from(clients)
         .where(
@@ -347,9 +355,9 @@ export class FollowUpScheduler {
         }
 
         // Determina tipo de reativação baseado em dias sem visita
-        const daysSince = row.client.lastVisitAt
+        const daysSince = row.clientLastVisit
           ? Math.floor(
-              (now.getTime() - row.client.lastVisitAt.getTime()) /
+              (now.getTime() - new Date(row.clientLastVisit).getTime()) /
                 (24 * 60 * 60 * 1000)
             )
           : 999;
@@ -366,7 +374,7 @@ export class FollowUpScheduler {
           .insert(followUps)
           .values({
             barbershopId: bs.id,
-            clientId: row.client.id,
+            clientId: row.clientId,
             type: reactivationType,
             scheduledFor: new Date(),
             status: 'pending',
@@ -375,7 +383,7 @@ export class FollowUpScheduler {
 
         await this.processSingleFollowUp({
           followUp: followUpResult[0],
-          client: row.client,
+          client: { id: row.clientId, name: row.clientName, phone: row.clientPhone, lastVisitAt: row.clientLastVisit } as any,
           appointment: null,
           professional: null,
           service: null,
@@ -406,14 +414,12 @@ export class FollowUpScheduler {
       .where(
         and(
           lte(aiConversations.updatedAt, thirtyDaysAgo),
-          // Só remove se não houver follow-up pendente
-          not(
-            sql`EXISTS (
-              SELECT 1 FROM ${followUps}
-              WHERE ${followUps.barbershopId} = ${aiConversations.barbershopId}
-                AND ${followUps.status} = 'pending'
-            )`
-          )
+          // Versão segura do NOT EXISTS sem SQL puro
+          sql`NOT EXISTS (
+            SELECT 1 FROM ${followUps}
+            WHERE ${followUps.barbershopId} = ${aiConversations.barbershopId}
+              AND ${followUps.status} = 'pending'
+          )`
         )
       );
 

@@ -170,8 +170,25 @@ export const professionals = pgTable('professionals', {
     '50.00'
   ),
   isActive: boolean('is_active').notNull().default(true),
+  userId: uuid('user_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// ----------------------------------------------------------
+// USER_PROFILES (RBAC: owner vs professional)
+// ----------------------------------------------------------
+export const userProfiles = pgTable('user_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  barbershopId: uuid('barbershop_id')
+    .notNull()
+    .references(() => barbershops.id, { onDelete: 'cascade' }),
+  professionalId: uuid('professional_id').references(() => professionals.id, {
+    onDelete: 'set null',
+  }),
+  role: text('role').notNull().default('owner'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ----------------------------------------------------------
@@ -510,6 +527,9 @@ export type NewNotificationLog = typeof notificationsLog.$inferInsert;
 export type ProductStockMovement = typeof productStockMovements.$inferSelect;
 export type NewProductStockMovement = typeof productStockMovements.$inferInsert;
 
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type NewUserProfile = typeof userProfiles.$inferInsert;
+
 // ============================================================
 // RELACIONAMENTOS (para usar com Drizzle relations)
 // ============================================================
@@ -535,6 +555,18 @@ export const professionalRelations = relations(professionals, ({ one }) => ({
   barbershop: one(barbershops, {
     fields: [professionals.barbershopId],
     references: [barbershops.id],
+  }),
+}));
+
+// UserProfile -> Barbershop + Professional
+export const userProfileRelations = relations(userProfiles, ({ one }) => ({
+  barbershop: one(barbershops, {
+    fields: [userProfiles.barbershopId],
+    references: [barbershops.id],
+  }),
+  professional: one(professionals, {
+    fields: [userProfiles.professionalId],
+    references: [professionals.id],
   }),
 }));
 
@@ -664,6 +696,7 @@ export const schema = {
   // Tabelas principais
   barbershops,
   professionals,
+  userProfiles,
   services,
   clients,
   appointments,
@@ -696,6 +729,7 @@ export const schema = {
   // Relations
   barbershopRelations,
   professionalRelations,
+  userProfileRelations,
   serviceRelations,
   clientRelations,
   appointmentRelations,

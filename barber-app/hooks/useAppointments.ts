@@ -13,16 +13,16 @@ import type { Appointment } from '../types/database';
 /**
  * Busca agendamentos por data
  */
-export function useAppointmentsByDate(date: string, barbershopId: string) {
+export function useAppointmentsByDate(date: string, barbershopId: string, professionalId?: string | null) {
   return useQuery({
-    queryKey: ['appointments', barbershopId, date],
+    queryKey: ['appointments', barbershopId, date, professionalId],
     queryFn: async () => {
       const startOfDay = new Date(date);
       startOfDay.setHours(0, 0, 0, 0);
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('appointments')
         .select(`
           *,
@@ -32,8 +32,13 @@ export function useAppointmentsByDate(date: string, barbershopId: string) {
         `)
         .eq('barbershop_id', barbershopId)
         .gte('scheduled_at', startOfDay.toISOString())
-        .lte('scheduled_at', endOfDay.toISOString())
-        .order('scheduled_at', { ascending: true });
+        .lte('scheduled_at', endOfDay.toISOString());
+
+      if (professionalId) {
+        query = query.eq('professional_id', professionalId);
+      }
+
+      const { data, error } = await query.order('scheduled_at', { ascending: true });
 
       if (error) throw error;
       return data as Appointment[];

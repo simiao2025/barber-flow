@@ -85,7 +85,7 @@ VALUES
       '20000000-0001-0000-0000-000000000005',
       '20000000-0001-0000-0000-000000000009',
       '20000000-0001-0000-0000-000000000010'
-    ],
+    ]::UUID[],
     '{
       "segunda": {"open": "09:00", "close": "19:00"},
       "terca": {"open": "09:00", "close": "19:00"},
@@ -114,7 +114,7 @@ VALUES
       '20000000-0001-0000-0000-000000000012',
       '20000000-0001-0000-0000-000000000013',
       '20000000-0001-0000-0000-000000000014'
-    ],
+    ]::UUID[],
     '{
       "segunda": {"open": "10:00", "close": "19:00"},
       "terca": {"open": "10:00", "close": "19:00"},
@@ -139,7 +139,7 @@ VALUES
       '20000000-0001-0000-0000-000000000009',
       '20000000-0001-0000-0000-000000000010',
       '20000000-0001-0000-0000-000000000012'
-    ],
+    ]::UUID[],
     '{
       "segunda": {"open": "09:00", "close": "18:00"},
       "terca": null,
@@ -177,22 +177,22 @@ VALUES
 INSERT INTO appointments (id, barbershop_id, client_id, professional_id, service_ids, scheduled_at, duration_min, status, total_price, source, notes)
 VALUES
   -- Agendamento feito hoje
-  ('50000000-0001-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000001', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000001'], NOW() + INTERVAL '2 hours', 40, 'confirmed', 45.00, 'whatsapp', 'WhatsApp - agendado via IA'),
+  ('50000000-0001-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000001', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000001']::UUID[], NOW() + INTERVAL '2 hours', 40, 'confirmed', 45.00, 'whatsapp', 'WhatsApp - agendado via IA'),
 
   -- Agendamento para amanhã
-  ('50000000-0001-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000004', '30000000-0001-0000-0000-000000000002', ARRAY['20000000-0001-0000-0000-000000000009'], NOW() + INTERVAL '1 day 3 hours', 75, 'pending', 95.00, 'manual', 'Combo Premium agendado na recepção'),
+  ('50000000-0001-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000004', '30000000-0001-0000-0000-000000000002', ARRAY['20000000-0001-0000-0000-000000000009']::UUID[], NOW() + INTERVAL '1 day 3 hours', 75, 'pending', 95.00, 'manual', 'Combo Premium agendado na recepção'),
 
   -- Agendamento finalizado ontem
-  ('50000000-0001-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000003', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000002', '20000000-0001-0000-0000-000000000006'], NOW() - INTERVAL '1 day', 55, 'done', 65.00, 'app', 'Corte Social + Barba'),
+  ('50000000-0001-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000003', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000002', '20000000-0001-0000-0000-000000000006']::UUID[], NOW() - INTERVAL '1 day', 55, 'done', 65.00, 'app', 'Corte Social + Barba'),
 
   -- Agendamento cancelado
-  ('50000000-0001-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000005', '30000000-0001-0000-0000-000000000003', ARRAY['20000000-0001-0000-0000-000000000001'], NOW() - INTERVAL '2 days', 40, 'cancelled', 45.00, 'whatsapp', 'Cliente cancelou por motivo pessoal'),
+  ('50000000-0001-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000005', '30000000-0001-0000-0000-000000000003', ARRAY['20000000-0001-0000-0000-000000000001']::UUID[], NOW() - INTERVAL '2 days', 40, 'cancelled', 45.00, 'whatsapp', 'Cliente cancelou por motivo pessoal'),
 
   -- Agendamento para semana que vem
-  ('50000000-0001-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000009', '30000000-0001-0000-0000-000000000002', ARRAY['20000000-0001-0000-0000-000000000011'], NOW() + INTERVAL '7 days 4 hours', 90, 'confirmed', 150.00, 'manual', 'Combo Noivo - sábado às 10h'),
+  ('50000000-0001-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000009', '30000000-0001-0000-0000-000000000002', ARRAY['20000000-0001-0000-0000-000000000011']::UUID[], NOW() + INTERVAL '7 days 4 hours', 90, 'confirmed', 150.00, 'manual', 'Combo Noivo - sábado às 10h'),
 
   -- Agendamento no-show (cliente não apareceu)
-  ('50000000-0001-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000010', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000002'], NOW() - INTERVAL '5 days', 35, 'no_show', 40.00, 'manual', 'Cliente não compareceu');
+  ('50000000-0001-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000010', '30000000-0001-0000-0000-000000000001', ARRAY['20000000-0001-0000-0000-000000000002']::UUID[], NOW() - INTERVAL '5 days', 35, 'no_show', 40.00, 'manual', 'Cliente não compareceu');
 
 
 -- ============================================================
@@ -258,10 +258,10 @@ VALUES
       '{"role": "user", "content": "E aí, quero agendar um corte amanhã à tarde", "timestamp": "' || (NOW() - INTERVAL '2 days') || '"}',
       '{"role": "assistant", "content": "Fala João! Beleza! Vou verificar os horários disponíveis. Que dia exatamente?", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '30 seconds') || '"}',
       '{"role": "user", "content": "Amanhã dia 15, depois das 14h", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '2 minutes') || '"}',
-      '{"role": "assistant", "content": "Perfeito! Encontrei horário com o Carlos às 14h30 e 15h30. Qual prefere?", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '2 minutes 30 seconds') || '"}',
+      '{"role": "assistant", "content": "Perfeito! Encontrei horário com o Carlos às 14h30 and 15h30. Qual prefere?", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '2 minutes 30 seconds') || '"}',
       '{"role": "user", "content": "14h30 pode ser, degradê de sempre", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '5 minutes') || '"}',
       '{"role": "assistant", "content": "Fechado! Agendado: Degradê com Carlos amanhã às 14h30. Te mando lembrete antes! ✂️", "timestamp": "' || (NOW() - INTERVAL '2 days' + INTERVAL '5 minutes 15 seconds') || '"}'
-    ],
+    ]::jsonb[],
     'agendamento',
     NOW() + INTERVAL '1 hour'
   ),
@@ -275,7 +275,7 @@ VALUES
       '{"role": "assistant", "content": "Olá! Nosso corte degradê é R$45, social R$40 e infantil R$35. Também temos combos com barba a partir de R$65! Posso te ajudar a agendar?", "timestamp": "' || (NOW() - INTERVAL '5 days' + INTERVAL '20 seconds') || '"}',
       '{"role": "user", "content": "Vou ver e depois eu falo", "timestamp": "' || (NOW() - INTERVAL '5 days' + INTERVAL '1 minute') || '"}',
       '{"role": "assistant", "content": "Sem problemas! Quando quiser, é só chamar. Estamos de seg a sáb! 👊", "timestamp": "' || (NOW() - INTERVAL '5 days' + INTERVAL '1 minute 10 seconds') || '"}'
-    ],
+    ]::jsonb[],
     'duvida',
     NOW() + INTERVAL '3 days'
   );
@@ -296,13 +296,13 @@ VALUES
   ('90000000-0001-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000003', '50000000-0001-0000-0000-000000000003', 'post_service', NOW() - INTERVAL '23 hours', NOW() - INTERVAL '23 hours', 'sent'),
 
   -- Reativação para cliente sumido
-  ('90000000-0001-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000010', NULL, 'reactivation', NOW() + INTERVAL '1 day 10 hours', NULL, 'pending'),
+  ('90000000-0001-0000-0000-000000000004', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000010', NULL, 'reactivation_30d', NOW() + INTERVAL '1 day 10 hours', NULL, 'pending'),
 
   -- Lembrete 24h pendente
   ('90000000-0001-0000-0000-000000000005', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000009', '50000000-0001-0000-0000-000000000005', 'reminder_24h', NOW() + INTERVAL '6 days 23 hours', NULL, 'pending'),
 
   -- Reativação para Felipe (30 dias sem aparecer)
-  ('90000000-0001-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000005', NULL, 'reactivation', NOW() + INTERVAL '5 hours', NULL, 'pending');
+  ('90000000-0001-0000-0000-000000000006', '11111111-1111-1111-1111-111111111111', '40000000-0001-0000-0000-000000000005', NULL, 'reactivation_30d', NOW() + INTERVAL '5 hours', NULL, 'pending');
 
 
 -- ============================================================

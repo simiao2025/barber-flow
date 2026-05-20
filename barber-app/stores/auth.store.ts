@@ -22,11 +22,24 @@ if (Platform.OS !== 'web') {
     };
   }
 } else {
-  // Web fallback - usa localStorage
+  // Web fallback - usa localStorage com check de SSR
   storage = {
-    getString: (key: string) => localStorage.getItem(key),
-    set: (key: string, value: string) => localStorage.setItem(key, value),
-    delete: (key: string) => localStorage.removeItem(key),
+    getString: (key: string) => {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        return localStorage.getItem(key);
+      }
+      return null;
+    },
+    set: (key: string, value: string) => {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem(key, value);
+      }
+    },
+    delete: (key: string) => {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.removeItem(key);
+      }
+    },
   };
 }
 
@@ -38,6 +51,9 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   user: import('@supabase/supabase-js').User | null;
+  barbershopCreatedAt: string | null;
+  role: 'owner' | 'professional' | null;
+  professionalId: string | null;
 
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -47,6 +63,7 @@ interface AuthState {
   setBarbershopId: (id: string) => void;
   setBarbershopName: (name: string) => void;
   setBarbershopPlan: (plan: string) => void;
+  setBarbershopCreatedAt: (date: string) => void;
   clearError: () => void;
   initialize: () => Promise<void>;
 }
@@ -57,21 +74,119 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   barbershopId: storage.getString('barbershopId') || null,
   barbershopName: storage.getString('barbershopName') || null,
   barbershopPlan: storage.getString('barbershopPlan') || null,
+  barbershopCreatedAt: storage.getString('barbershopCreatedAt') || null,
+  role: (storage.getString('userRole') as 'owner' | 'professional' | null) || null,
+  professionalId: storage.getString('professionalId') || null,
   isLoading: true,
   error: null,
 
   initialize: async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      set({ session, user: session?.user || null, isLoading: false });
+      
+      let barbershopInfo: any = { id: null, name: null, plan: 'free', created_at: null };
+      let userRole: 'owner' | 'professional' | null = null;
+      let userProfessionalId: string | null = null;
+      
+      if (session) {
+        // Buscar o perfil do usuário para RBAC
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, professional_id, barbershop_id')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (profile) {
+          userRole = profile.role as 'owner' | 'professional';
+          userProfessionalId = profile.professional_id || null;
+          storage.set('userRole', profile.role);
+          if (profile.professional_id) {
+            storage.set('professionalId', profile.professional_id);
+          } else {
+            storage.delete('professionalId');
+          }
+
+          if (profile.role === 'professional') {
+            const { data: bsData } = await supabase
+              .from('barbershops')
+              .select('id, name, plan, created_at')
+              .eq('id', profile.barbershop_id)
+              .single();
+            if (bsData) {
+              barbershopInfo = bsData;
+              storage.set('barbershopId', bsData.id);
+              storage.set('barbershopName', bsData.name);
+              storage.set('barbershopPlan', bsData.plan);
+              storage.set('barbershopCreatedAt', bsData.created_at);
+            }
+          } else {
+            const { data: bsData } = await supabase
+              .from('barbershops')
+              .select('id, name, plan, created_at')
+              .eq('owner_id', session.user.id)
+              .single();
+            if (bsData) {
+              barbershopInfo = bsData;
+              storage.set('barbershopId', bsData.id);
+              storage.set('barbershopName', bsData.name);
+              storage.set('barbershopPlan', bsData.plan);
+              storage.set('barbershopCreatedAt', bsData.created_at);
+            }
+          }
+        } else {
+          userRole = 'owner';
+          storage.set('userRole', 'owner');
+          storage.delete('professionalId');
+
+          const { data: bsData } = await supabase
+            .from('barbershops')
+            .select('id, name, plan, created_at')
+            .eq('owner_id', session.user.id)
+            .single();
+          
+          if (bsData) {
+            barbershopInfo = bsData;
+            storage.set('barbershopId', bsData.id);
+            storage.set('barbershopName', bsData.name);
+            storage.set('barbershopPlan', bsData.plan);
+            storage.set('barbershopCreatedAt', bsData.created_at);
+          }
+        }
+      }
+
+      set({ 
+        session, 
+        user: session?.user || null, 
+        barbershopId: barbershopInfo.id,
+        barbershopName: barbershopInfo.name,
+        barbershopPlan: barbershopInfo.plan as any,
+        barbershopCreatedAt: barbershopInfo.created_at || null,
+        role: userRole,
+        professionalId: userProfessionalId,
+        isLoading: false 
+      });
 
       // Listener de mudanças de auth
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session, user: session?.user || null });
-        if (session) {
-          storage.set('barbershopId', session.user.id);
-        } else {
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (!session) {
           storage.delete('barbershopId');
+          storage.delete('barbershopName');
+          storage.delete('barbershopPlan');
+          storage.delete('barbershopCreatedAt');
+          storage.delete('userRole');
+          storage.delete('professionalId');
+          set({ 
+            session: null, 
+            user: null, 
+            barbershopId: null, 
+            barbershopName: null, 
+            barbershopPlan: null,
+            barbershopCreatedAt: null,
+            role: null,
+            professionalId: null
+          });
+        } else {
+          set({ session, user: session.user });
         }
       });
     } catch (error) {
@@ -87,7 +202,87 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { data, error } = await signIn(email, password);
       if (error) throw error;
-      set({ session: data.session, isLoading: false });
+      
+      let barbershopInfo: any = { id: null, name: null, plan: 'free', created_at: null };
+      let userRole: 'owner' | 'professional' | null = null;
+      let userProfessionalId: string | null = null;
+
+      if (data.session) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role, professional_id, barbershop_id')
+          .eq('user_id', data.session.user.id)
+          .single();
+
+        if (profile) {
+          userRole = profile.role as 'owner' | 'professional';
+          userProfessionalId = profile.professional_id || null;
+          storage.set('userRole', profile.role);
+          if (profile.professional_id) {
+            storage.set('professionalId', profile.professional_id);
+          } else {
+            storage.delete('professionalId');
+          }
+
+          if (profile.role === 'professional') {
+            const { data: bsData } = await supabase
+              .from('barbershops')
+              .select('id, name, plan, created_at')
+              .eq('id', profile.barbershop_id)
+              .single();
+            if (bsData) {
+              barbershopInfo = bsData;
+              storage.set('barbershopId', bsData.id);
+              storage.set('barbershopName', bsData.name);
+              storage.set('barbershopPlan', bsData.plan);
+              storage.set('barbershopCreatedAt', bsData.created_at);
+            }
+          } else {
+            const { data: bsData } = await supabase
+              .from('barbershops')
+              .select('id, name, plan, created_at')
+              .eq('owner_id', data.session.user.id)
+              .single();
+            if (bsData) {
+              barbershopInfo = bsData;
+              storage.set('barbershopId', bsData.id);
+              storage.set('barbershopName', bsData.name);
+              storage.set('barbershopPlan', bsData.plan);
+              storage.set('barbershopCreatedAt', bsData.created_at);
+            }
+          }
+        } else {
+          userRole = 'owner';
+          storage.set('userRole', 'owner');
+          storage.delete('professionalId');
+
+          const { data: bsData } = await supabase
+            .from('barbershops')
+            .select('id, name, plan, created_at')
+            .eq('owner_id', data.session.user.id)
+            .single();
+          
+          if (bsData) {
+            barbershopInfo = bsData;
+            storage.set('barbershopId', bsData.id);
+            storage.set('barbershopName', bsData.name);
+            storage.set('barbershopPlan', bsData.plan);
+            storage.set('barbershopCreatedAt', bsData.created_at);
+          }
+        }
+      }
+
+      set({ 
+        session: data.session, 
+        user: data.session.user,
+        barbershopId: barbershopInfo.id,
+        barbershopName: barbershopInfo.name,
+        barbershopPlan: barbershopInfo.plan as any,
+        barbershopCreatedAt: barbershopInfo.created_at || null,
+        role: userRole,
+        professionalId: userProfessionalId,
+        isLoading: false 
+      });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Erro ao fazer login',
@@ -101,7 +296,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await signOut();
       storage.delete('barbershopId');
-      set({ session: null, barbershopId: null });
+      storage.delete('barbershopName');
+      storage.delete('barbershopPlan');
+      storage.delete('barbershopCreatedAt');
+      storage.delete('userRole');
+      storage.delete('professionalId');
+      set({ 
+        session: null, 
+        user: null,
+        barbershopId: null, 
+        barbershopName: null, 
+        barbershopPlan: null,
+        barbershopCreatedAt: null,
+        role: null,
+        professionalId: null
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Erro ao sair' });
       throw error;
@@ -123,7 +332,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       storage.delete('barbershopId');
       storage.delete('barbershopName');
       storage.delete('barbershopPlan');
-      set({ session: null, barbershopId: null, barbershopName: null, barbershopPlan: null });
+      storage.delete('barbershopCreatedAt');
+      storage.delete('userRole');
+      storage.delete('professionalId');
+      set({ 
+        session: null, 
+        user: null,
+        barbershopId: null, 
+        barbershopName: null, 
+        barbershopPlan: null,
+        barbershopCreatedAt: null,
+        role: null,
+        professionalId: null
+      });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Erro ao sair' });
       throw error;
@@ -138,5 +359,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setBarbershopPlan: (plan) => {
     storage.set('barbershopPlan', plan);
     set({ barbershopPlan: plan });
+  },
+
+  setBarbershopCreatedAt: (date) => {
+    storage.set('barbershopCreatedAt', date);
+    set({ barbershopCreatedAt: date });
   },
 }));

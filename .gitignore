@@ -51,3 +51,4 @@ agent-server/drizzle/
 # Testing
 coverage/
 .nyc_output/
+barber-app/.env 

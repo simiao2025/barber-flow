@@ -62,13 +62,46 @@ function RankingItem({ rank, name, value, subtitle, avatar }: { rank: number; na
   );
 }
 
+function TrialBanner() {
+  const { barbershopPlan, barbershopCreatedAt, role } = useAuthStore();
+  
+  if (role === 'professional' || barbershopPlan !== 'free' || !barbershopCreatedAt) return null;
+
+  const now = new Date();
+  const created = new Date(barbershopCreatedAt);
+  const diffTime = now.getTime() - created.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const daysLeft = Math.max(0, 7 - diffDays);
+
+  return (
+    <View style={styles.trialBanner}>
+      <View style={styles.trialInfo}>
+        <Ionicons name="time" size={20} color="#1a1a1a" />
+        <Text style={styles.trialText}>
+          {daysLeft > 0 
+            ? `Você tem ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'} de teste restantes.`
+            : 'Seu período de teste expirou.'}
+        </Text>
+      </View>
+      <TouchableOpacity style={styles.trialButton}>
+        <Text style={styles.trialButtonText}>Assinar Plano</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+
 // ============================================================
 // TELA PRINCIPAL
 // ============================================================
 
 export default function DashboardScreen() {
-  const { barbershopId } = useAuthStore();
-  const { data, isLoading, refetch } = useDashboard(barbershopId || '');
+  const { barbershopId, role, professionalId } = useAuthStore();
+  const { data, isLoading, error, refetch } = useDashboard(
+    barbershopId ?? '',
+    role || undefined,
+    role === 'professional' ? professionalId : null
+  );
 
   const onRefresh = async () => {
     await refetch();
@@ -100,6 +133,8 @@ export default function DashboardScreen() {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={false} onRefresh={onRefresh} tintColor="#f59e0b" />}
     >
+      <TrialBanner />
+
       {/* SEÇÃO 1 — KPIs do dia */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Hoje</Text>
@@ -116,12 +151,14 @@ export default function DashboardScreen() {
             value={`R$ ${data.kpis.revenue_today.toFixed(2)}`}
             color="#10b981"
           />
-          <MetricCard
-            icon="logo-whatsapp"
-            label="Novos WhatsApp"
-            value={data.kpis.new_clients_whatsapp}
-            color="#25D366"
-          />
+          {role !== 'professional' && (
+            <MetricCard
+              icon="logo-whatsapp"
+              label="Novos WhatsApp"
+              value={data.kpis.new_clients_whatsapp}
+              color="#25D366"
+            />
+          )}
           <MetricCard
             icon="time"
             label="Próximo"
@@ -165,13 +202,12 @@ export default function DashboardScreen() {
               noOfSections={4}
               barBorderRadius={4}
               frontColor="#f59e0b"
-              pressEnabled={false}
               showVerticalLines={false}
               labelWidth={40}
               yAxisThickness={0}
               xAxisThickness={1}
               yAxisTextStyle={{ color: '#6b7280', fontSize: 10 }}
-              labelTextStyle={{ color: '#9ca3af', fontSize: 10 }}
+              xAxisLabelTextStyle={{ color: '#9ca3af', fontSize: 10 }}
             />
           ) : (
             <Text style={styles.emptyChartText}>Sem dados no período</Text>
@@ -194,47 +230,53 @@ export default function DashboardScreen() {
           )) || <Text style={styles.emptyText}>Sem dados</Text>}
         </View>
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Top Profissionais</Text>
-        <View style={styles.rankingContainer}>
-          {data.top_professionals?.map((p, i) => (
-            <RankingItem
-              key={i}
-              rank={i}
-              name={p.name}
-              value={`R$ ${p.revenue.toFixed(2)}`}
-              subtitle="receita gerada"
-            />
-          )) || <Text style={styles.emptyText}>Sem dados</Text>}
-        </View>
+        {role !== 'professional' && (
+          <>
+            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Top Profissionais</Text>
+            <View style={styles.rankingContainer}>
+              {data.top_professionals?.map((p, i) => (
+                <RankingItem
+                  key={i}
+                  rank={i}
+                  name={p.name}
+                  value={`R$ ${p.revenue.toFixed(2)}`}
+                  subtitle="receita gerada"
+                />
+              )) || <Text style={styles.emptyText}>Sem dados</Text>}
+            </View>
+          </>
+        )}
       </View>
 
       {/* SEÇÃO 4 — Alertas */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Atenção Necessária</Text>
-        <View style={styles.alertsContainer}>
-          <AlertCard
-            icon="person-remove"
-            label="Clientes inativos"
-            count={data.alerts.inactive_clients_count}
-            color="#ef4444"
-            route="/clientes?filter=inactive"
-          />
-          <AlertCard
-            icon="alert"
-            label="Estoque crítico"
-            count={data.alerts.low_stock_count}
-            color="#f59e0b"
-            route="/produtos?filter=low_stock"
-          />
-          <AlertCard
-            icon="chatbubble-ellipses"
-            label="Aguardando humano"
-            count={data.alerts.pending_handoff_count}
-            color="#8b5cf6"
-            route="/conversas?filter=handoff"
-          />
+      {role !== 'professional' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Atenção Necessária</Text>
+          <View style={styles.alertsContainer}>
+            <AlertCard
+              icon="person-remove"
+              label="Clientes inativos"
+              count={data.alerts.inactive_clients_count}
+              color="#ef4444"
+              route="/clientes?filter=inactive"
+            />
+            <AlertCard
+              icon="alert"
+              label="Estoque crítico"
+              count={data.alerts.low_stock_count}
+              color="#f59e0b"
+              route="/produtos?filter=low_stock"
+            />
+            <AlertCard
+              icon="chatbubble-ellipses"
+              label="Aguardando humano"
+              count={data.alerts.pending_handoff_count}
+              color="#8b5cf6"
+              route="/conversas?filter=handoff"
+            />
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -249,6 +291,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a1a',
+  },
+  trialBanner: {
+    backgroundColor: '#f59e0b',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 8,
+  },
+  trialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trialText: {
+    color: '#1a1a1a',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  trialButton: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  trialButtonText: {
+    color: '#f59e0b',
+    fontSize: 12,
+    fontWeight: '700',
   },
   loadingContainer: {
     flex: 1,

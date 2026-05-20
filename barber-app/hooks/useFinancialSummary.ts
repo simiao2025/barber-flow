@@ -51,9 +51,8 @@ async function fetchFinancialSummary(
   }
 
   const queryString = new URLSearchParams(params).toString();
-  const { data, error } = await supabase.functions.invoke('financial-summary', {
+  const { data, error } = await supabase.functions.invoke('financial-summary?' + queryString, {
     body: {},
-    params,
   });
 
   if (error) throw error;

@@ -15,7 +15,7 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-  }),
+  } as any),
 });
 
 /**
@@ -69,7 +69,7 @@ export async function registerToken(token: string, barbershopId: string): Promis
 /**
  * Configura handlers de notificações
  */
-export function setupNotificationHandlers(router: Router): void {
+export function setupNotificationHandlers(router: Router): () => void {
   // Toque na notificação
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const type = response.notification.request.content.data.type;
@@ -85,7 +85,7 @@ export function setupNotificationHandlers(router: Router): void {
         router.push('/produtos');
         break;
       case 'daily_summary':
-        router.push('/(tabs)/index');
+        router.push('/');
         break;
     }
   });
